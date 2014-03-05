@@ -24,23 +24,29 @@ def random_line(afile):
 current = ""
 gotweet = ""
 clean = ""
+broken = []
 count = 0
-# pulling the tweet from CNN Breaking
-test = api.GetUserTimeline("428333")
+test = api.GetHomeTimeline()
 post = open("postfix.txt", "r")
 
-# This loop takes the most recent tweet from CNN, slices out the HTML and sees if it's too long for our purposes. If it is, it goes to the next one, otherwise it adds a post-fix to the end.
-while gotweet == "":
+# The loop takes the most recent tweet from @upworthify's timeline,  splits it into a list, then drops the last item (since they're all breaking news accounts that tend to end their tweets with links, this works 9/10 times)
+# It then re-assembles the list as a sentence, drops the last space, and checks if there's punctuation to drop as well, before adding a suffix to the end.
+# If the final assembled tweet is too big, or too small, the loop continues, and if it hasn't found something after ten tries, it quits.
+while len(gotweet) == 0 or len(gotweet) > 140:
 	current = test[count].text
-	clean = current[:-23:]
-	if len(clean) < 85:
-		gotweet = clean.title() + random_line(post)
-	else:
-		count += 1
+	broken = current.split(" ")
+	broken = broken[:-1]
+	for word in broken:
+		clean += word + " "
+	clean = clean[:-1]
+	if clean[len(clean) - 1] == "." or clean[len(clean) - 1] == "," or clean[len(clean) - 1] == ":":
+		clean = clean[:-1]
+	gotweet = clean.title() + random_line(post)
+	count += 1
+	if count > 10:
+		break
 
-print gotweet
-
-# Where the magic happens
+# and this is where we send the final product to Twitter
 api.PostUpdate(gotweet)
 
 post.close()
